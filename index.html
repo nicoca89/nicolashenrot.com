@@ -34,7 +34,7 @@ h1,p,figure{margin:0}
 .page{min-height:100svh;display:flex;flex-direction:column;align-items:center;padding:0 var(--g)}
 header{width:100%;display:flex;justify-content:center;padding:clamp(24px,4vh,40px) 0 0}
 .brand{display:flex;align-items:center;gap:12px}
-.nh-hd{height:34px;width:auto;fill:var(--ink);overflow:visible}
+.nh-hd{height:30px;width:auto;fill:var(--ink);overflow:visible}
 .brand{padding:12px;margin:-12px}
 .nh-hd rect{shape-rendering:crispEdges}
 .nh-hd .nh-r{fill:#FF1000;transition:transform .45s cubic-bezier(.34,1.56,.64,1)}
@@ -82,9 +82,9 @@ main{flex:1;width:100%;max-width:880px;display:flex;flex-direction:column;align-
 .iso .dl{fill:none;stroke:var(--signal);stroke-width:calc(var(--sw) * 1.6);stroke-linejoin:round}
 .iso .pt{fill:#fff;stroke:var(--signal);stroke-width:var(--sw)}
 .iso .db{fill:var(--signal)}
-.iso{width:100%;height:clamp(250px,46vh,480px)}
-.iso-scene{left:50%;top:55%;width:min(64%,calc(46vh * .9),440px)}
-@media (max-width:700px){.iso{height:clamp(220px,66vw,340px)}.iso-scene{width:72%;top:52%}.iso-tags{display:none}}
+.iso{width:100%;height:clamp(230px,42vh,440px);margin-top:clamp(20px,4.5vh,48px)}
+.iso-scene{left:50%;top:50%;width:min(60%,calc(42vh * .9),400px)}
+@media (max-width:700px){.iso{height:clamp(210px,62vw,320px)}.iso-scene{width:68%;top:44%}.iso-tags{display:none}}
 
 .cs-h{margin-top:clamp(8px,2vh,24px);font:800 clamp(42px,6vw,84px)/.88 var(--display);letter-spacing:-.05em;text-transform:uppercase;text-wrap:balance}
 .dot{display:inline-block;width:.17em;height:.17em;margin-left:.05em;background:var(--signal);overflow:hidden;text-indent:-9em;vertical-align:baseline}
@@ -111,7 +111,7 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
 .ready .rv{opacity:1;transform:none;transition:opacity .7s,transform .9s var(--ease);transition-delay:calc(.15s + var(--d,0) * .1s)}
 @media (prefers-reduced-motion:reduce){.js .rv{opacity:1;transform:none}.ready .rv{transition:none}}
 @media (max-width:560px){.cs-mail{width:100%;justify-content:center}}
-@media (max-height:820px) and (min-width:701px){.iso{height:40vh}.iso-scene{width:min(64%,calc(40vh * .9),440px)}.cs-lead{margin-top:14px}.cs-mail{margin-top:22px}}
+@media (max-height:820px) and (min-width:701px){.iso{height:37vh;margin-top:3vh}.iso-scene{width:min(60%,calc(37vh * .9),400px)}.cs-lead{margin-top:14px}.cs-mail{margin-top:22px}}
 </style>
 </head>
 <body>
@@ -150,7 +150,7 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
         </div>
         <div class="iso-tags"><span class="iso-tag" data-i="0" data-d="12 columns, 8px rhythm. Every screen starts here."><b>01</b><em>GRID</em><i></i></span><span class="iso-tag" data-i="1" data-d="Structure first: what goes where, and why."><b>02</b><em>LAYOUT</em><i></i></span><span class="iso-tag" data-i="2" data-n="DESIGN SYSTEM" data-d="Tokens and components, the same in Figma and in code."><b>03</b><em>DESIGN SYSTEM</em><i></i></span><span class="iso-tag" data-i="3" data-d="Real data and every state: empty, loading, error."><b>04</b><em>DATA</em><i></i></span><span class="iso-tag is-ui" data-i="4" data-d="The live product. Same file, no handoff."><b>05</b><em>SHIPPED</em><i></i></span></div>
       </figure>
-    <h1 class="cs-h rv" style="--d:1" aria-label="Work in progress.">Work in progress<span class="dot">.</span></h1>
+    <h1 class="cs-h rv" style="--d:1" aria-label="Layer by layer.">Layer by layer<span class="dot">.</span></h1>
     <p class="cs-lead rv" style="--d:2">I'm designing and building my new portfolio, in real code. It isn't ready yet, but you can already reach me.</p>
     <button type="button" class="cs-mail rv" style="--d:3" id="copy" data-email="nick.henrot@gmail.com" aria-label="Contact me: copy my email address, nick.henrot@gmail.com">
       <span id="copy-txt">CONTACT ME</span>
@@ -184,7 +184,7 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
     let p = reduce ? 1 : 0;                    // intro progress 0 → 1
     let raf = 0, introOn = false, t0 = 0, hov = -1;
     const h = layers.map(() => 0);             // per-layer hover amount, eased
-    const INTRO = 2100, STAGGER = 0.1;
+    const INTRO = 2100, STAGGER = 0.1, FLOAT = !reduce;
     const sizes = () => iso.style.setProperty('--sw', (1.3 * 2000 / (scene.offsetWidth || 1)).toFixed(2));
     const render = () => {
       const r = iso.getBoundingClientRect();
@@ -195,7 +195,9 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
       layers.forEach((l, i) => {
         // top layers lift off first, so the stack never crosses itself; 1px floor avoids z-fighting
         const e = inOut(clamp((p - (N - 1 - i) * STAGGER) / (1 - (N - 1) * STAGGER)));
-        const z = i * (1 + (G - 1) * e);
+        // levitate: once the stack is open, every layer drifts a few pixels, out of phase with its neighbours
+        const lev = FLOAT ? Math.sin(performance.now() / 1000 * 1.15 + i * 1.1) * W * 0.013 * e : 0;
+        const z = i * (1 + (G - 1) * e) + lev;
         if (i === N - 1) top = z;
         l.style.transform = `translate3d(0,0,${z.toFixed(2)}px)`;
         // local (-k,-k) is straight left on screen in this projection
@@ -225,7 +227,7 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
       let moving = false;
       h.forEach((v, i) => { const t = i === hov ? 1 : 0; h[i] = v + (t - v) * 0.16; if (Math.abs(t - h[i]) < 0.002) h[i] = t; else moving = true; });
       render();
-      if (introOn || moving) raf = requestAnimationFrame(tick);
+      if (introOn || moving || FLOAT) raf = requestAnimationFrame(tick);
     };
     const kick = () => { if (!raf) raf = requestAnimationFrame(tick); };
     const setHov = i => {
