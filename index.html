@@ -219,8 +219,6 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
         // the others step back: grey and faint, so only the hovered plate reads
         const d0 = Math.max(0, any - h[i]), d = 1 - (1 - d0) * (1 - d0);   // the others fade faster than the plate moves
         plates[i].style.setProperty('--dm', d.toFixed(3));
-        // plates above the one pulled out disappear completely, so no dashed line ever crosses it; those below stay as its slot
-        plates[i].style.setProperty('--up', (ref >= 0 && i > ref ? d : 0).toFixed(3));
         plates[i].classList.toggle('dim', d > 0.5);   // dashed only once it has mostly faded, so the switch never pops
         plates[i].style.setProperty('--hv', h[i].toFixed(3));
         tags[i].dataset.e = e;
