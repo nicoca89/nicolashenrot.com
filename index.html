@@ -195,7 +195,7 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
     const outCubic = t => 1 - Math.pow(1 - t, 3);
     const inOut = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;   // slow start, slow end
     let p = reduce ? 1 : 0;                    // intro progress 0 → 1
-    let raf = 0, introOn = false, t0 = 0, hov = -1, last = 0, hovT = 0;
+    let raf = 0, introOn = false, t0 = 0, hov = -1, last = 0, hovT = 0, want = -1;
     const h = layers.map(() => 0);             // per-layer hover amount, eased
     const INTRO = 2100, STAGGER = 0.1, FLOAT = !reduce;
     const sizes = () => iso.style.setProperty('--sw', (1.3 * 2000 / (scene.offsetWidth || 1)).toFixed(2));
@@ -214,7 +214,7 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
         if (i === N - 1) top = z;
         l.style.transform = `translate3d(0,0,${z.toFixed(2)}px)`;
         // local (-k,-k) is straight left on screen in this projection
-        const sm = h[i] * h[i] * (3 - 2 * h[i]), k = -0.7071 * D * sm;   // eased both ways: the plate glides out, then settles
+        const k = -0.7071 * D * h[i];   // starts moving at once, then settles (ease-out)
         plates[i].style.transform = `translate3d(${k.toFixed(2)}px,${k.toFixed(2)}px,0)`;
         // the others step back: grey and faint, so only the hovered plate reads
         const d = Math.max(0, any - h[i]);
@@ -239,16 +239,22 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
       if (introOn) { p = clamp((now - t0) / INTRO); if (p >= 1) introOn = false; }
       let moving = false;
       const dt = last ? Math.min(64, now - last) : 16; last = now;
-      const f = 1 - Math.exp(-dt / 170);   // time-based easing: ~0.5 s to settle, same on every screen
+      const f = 1 - Math.exp(-dt / 130);   // time-based easing: ~0.5 s to settle, same on every screen
       h.forEach((v, i) => { const t = i === hov ? 1 : 0; h[i] = v + (t - v) * f; if (Math.abs(t - h[i]) < 0.002) h[i] = t; else moving = true; });
       render();
       if (introOn || moving || FLOAT) raf = requestAnimationFrame(tick); else last = 0;
     };
     const kick = () => { if (!raf) raf = requestAnimationFrame(tick); };
     // a short delay before switching, so crossing from one plate to the next never flickers
-    const setHov = i => { clearTimeout(hovT); hovT = setTimeout(() => applyHov(i), i === -1 ? 160 : 70); };
+    const setHov = i => {
+      if (i === want) return;                  // pointermove fires constantly: only a change of plate restarts the timer
+      want = i; clearTimeout(hovT);
+      if (hov === -1 && i !== -1) applyHov(i);  // first plate: respond at once
+      else hovT = setTimeout(() => applyHov(i), i === -1 ? 120 : 45);
+    };
     const applyHov = i => {
-      if (p < 1 || i === hov) return;          // wait for the intro to finish
+      if (p < 1) { want = -2; return; }        // wait for the intro to finish (and let the next move try again)
+      if (i === hov) return;
       hov = i;
       tags.forEach((t, k) => t.classList.toggle('on', k === i));
       kick();
