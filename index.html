@@ -197,19 +197,20 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
     let p = reduce ? 1 : 0;                    // intro progress 0 → 1
     let raf = 0, introOn = false, t0 = 0, hov = -1, last = 0, hovT = 0, want = -1, ref = -1;
     const h = layers.map(() => 0);             // per-layer hover amount, eased
+    let floatT = performance.now() / 1000;   // the float clock pauses while a plate is out, so the hit areas hold still under the pointer
+    const g = layers.map(() => 0);             // per-layer dimming, eased: 1 = this plate steps back because another one is out
     const INTRO = 2100, STAGGER = 0.1, FLOAT = !reduce;
     const sizes = () => iso.style.setProperty('--sw', (1.3 * 2000 / (scene.offsetWidth || 1)).toFixed(2));
     const render = () => {
       const r = iso.getBoundingClientRect();
       const fold = clamp((innerHeight * 0.15 - r.top) / (r.height * 0.9));   // close the stack as it scrolls away
       const W = scene.offsetWidth, G = W * 0.1 * (1 - 0.85 * fold), D = W * 0.1;   // D: how far the hovered plate slides out
-      const any = Math.max(...h);
       let top = 0;
       layers.forEach((l, i) => {
         // top layers lift off first, so the stack never crosses itself; 1px floor avoids z-fighting
         const e = inOut(clamp((p - (N - 1 - i) * STAGGER) / (1 - (N - 1) * STAGGER)));
         // levitate: once the stack is open, every layer drifts a few pixels, out of phase with its neighbours
-        const lev = FLOAT ? Math.sin(performance.now() / 1000 * 1.15 + i * 1.1) * W * 0.013 * e : 0;
+        const lev = FLOAT ? Math.sin(floatT * 1.15 + i * 1.1) * W * 0.013 * e : 0;
         const z = i * (1 + (G - 1) * e) + lev;
         if (i === N - 1) top = z;
         l.style.transform = `translate3d(0,0,${z.toFixed(2)}px)`;
@@ -217,7 +218,7 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
         const k = -0.7071 * D * h[i];   // starts moving at once, then settles (ease-out)
         plates[i].style.transform = `translate3d(${k.toFixed(2)}px,${k.toFixed(2)}px,0)`;
         // the others step back: grey and faint, so only the hovered plate reads
-        const d0 = Math.max(0, any - h[i]), d = 1 - (1 - d0) * (1 - d0);   // the others fade faster than the plate moves
+        const d = g[i];   // its own target, so switching plates never flashes the others back
         plates[i].style.setProperty('--dm', d.toFixed(3));
         plates[i].classList.toggle('dim', d > 0.5);   // dashed only once it has mostly faded, so the switch never pops
         plates[i].style.setProperty('--hv', h[i].toFixed(3));
@@ -239,8 +240,11 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
       if (introOn) { p = clamp((now - t0) / INTRO); if (p >= 1) introOn = false; }
       let moving = false;
       const dt = last ? Math.min(64, now - last) : 16; last = now;
+      if (hov === -1) floatT += dt / 1000;
       const f = 1 - Math.exp(-dt / 90);   // time-based easing: ~0.5 s to settle, same on every screen
       h.forEach((v, i) => { const t = i === hov ? 1 : 0; h[i] = v + (t - v) * f; if (Math.abs(t - h[i]) < 0.002) h[i] = t; else moving = true; });
+      const fd = 1 - Math.exp(-dt / 60);   // the others step back faster than the plate moves
+      g.forEach((v, i) => { const t = hov >= 0 && i !== hov ? 1 : 0; g[i] = v + (t - v) * fd; if (Math.abs(t - g[i]) < 0.002) g[i] = t; else moving = true; });
       render();
       if (introOn || moving || FLOAT) raf = requestAnimationFrame(tick); else last = 0;
     };
