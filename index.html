@@ -387,7 +387,7 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
 
   // the story, in ms: flat → turn → layers lift → name them (→ in a loop, fold back)
   const story = t => {
-    const ph = innerWidth < 900;
+    const ph = false;   // coming soon: the full opening (flat, then the turn) on every screen
     const open = clamp((t - (ph ? 120 : 450)) / 900), close = clamp((t - 4200) / 900);   // the camera turns first, then the layers lift
     const p = open * (1 - close);
     const cam = (ph ? 1 : inOut(clamp((t - 100) / 650))) * (1 - inOut(clamp((t - 4900) / 650)));
