@@ -154,6 +154,7 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
 .pl .gcol{fill:var(--signal);opacity:.10}
 .pl .gbl{stroke:var(--signal);stroke-width:calc(var(--sw) * .6);opacity:.35}
 .pl .ln{fill:none;stroke:var(--ink);stroke-width:var(--sw)}
+.pl .lf{stroke:#9A9A96;stroke-width:calc(var(--sw) * .55)}   /* layout frames: quiet guides, not ink */
 .pl .tb{fill:#CFCFCB}
 .pl .sel0{fill:#EDEDEA}
 .pl .acc{fill:var(--signal)}
@@ -178,6 +179,8 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
 .pl .sd{opacity:calc(1 - var(--dm))}
 .pl .shd{opacity:calc(var(--shd,0) * (1 - var(--dm)))}
 
+/* the back face's outline sits inside its box, like the other edges, so no stub pokes out at the corners */
+.pl .s-k{outline-offset:calc(-1.25px * var(--ps))}
 /* coming soon: the plan sits on top, the title and the contact button under it */
 .pl{width:100%;height:clamp(240px,44vh,460px);margin-top:clamp(16px,4vh,44px)}
 .pl .pl-scene{width:min(64%,540px,60vh)}
@@ -199,7 +202,7 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
           </div>
           <div class="pl-layer" style="--i:1">
             <i class="sd s-k"></i><i class="sd s-t"></i><i class="sd s-r"></i><div class="pl-in">
-            <svg viewBox="0 0 2000 1299" aria-hidden="true"><rect class="ln" x="10.6" y="10.6" width="342.6" height="1279.1" rx="15.9"/><line class="ln" x1="10.6" y1="132.3" x2="353.2" y2="132.3"/><line class="ln" x1="10.6" y1="255.3" x2="353.2" y2="255.3"/><line class="ln" x1="10.6" y1="1197.1" x2="353.2" y2="1197.1"/><rect class="ln" x="383.6" y="209.0" width="1066.1" height="420.6" rx="15.9"/><rect class="ln" x="383.6" y="703.7" width="1066.1" height="592.6" rx="15.9"/><rect class="ln" x="1481.5" y="10.6" width="507.9" height="1279.1" rx="15.9"/><line class="ln" x1="1481.5" y1="215.6" x2="1989.4" y2="215.6"/><rect class="ln" x="1502.6" y="239.4" width="465.6" height="145.5" rx="13.2"/><rect class="ln" x="1502.6" y="407.4" width="465.6" height="156.1" rx="13.2"/><rect class="ln" x="1502.6" y="584.7" width="465.6" height="190.5" rx="13.2"/><rect class="ln" x="1502.6" y="796.3" width="465.6" height="78.0" rx="13.2"/></svg>
+            <svg viewBox="0 0 2000 1299" aria-hidden="true"><rect class="ln lf" x="10.6" y="10.6" width="342.6" height="1279.1" rx="15.9"/><line class="ln lf" x1="10.6" y1="132.3" x2="353.2" y2="132.3"/><line class="ln lf" x1="10.6" y1="255.3" x2="353.2" y2="255.3"/><line class="ln lf" x1="10.6" y1="1197.1" x2="353.2" y2="1197.1"/><rect class="ln lf" x="383.6" y="209.0" width="1066.1" height="420.6" rx="15.9"/><rect class="ln lf" x="383.6" y="703.7" width="1066.1" height="592.6" rx="15.9"/><rect class="ln lf" x="1481.5" y="10.6" width="507.9" height="1279.1" rx="15.9"/><line class="ln lf" x1="1481.5" y1="215.6" x2="1989.4" y2="215.6"/><rect class="ln lf" x="1502.6" y="239.4" width="465.6" height="145.5" rx="13.2"/><rect class="ln lf" x="1502.6" y="407.4" width="465.6" height="156.1" rx="13.2"/><rect class="ln lf" x="1502.6" y="584.7" width="465.6" height="190.5" rx="13.2"/><rect class="ln lf" x="1502.6" y="796.3" width="465.6" height="78.0" rx="13.2"/></svg>
             <i class="pl-a c0"></i><i class="pl-a c1"></i><i class="pl-a c2"></i><i class="pl-a c3"></i><span class="hd" style="left:0;top:0"></span><span class="hd" style="left:100%;top:0"></span><span class="hd" style="left:100%;top:100%"></span><span class="hd" style="left:0;top:100%"></span></div>
           </div>
           <div class="pl-layer" style="--i:2">
@@ -380,6 +383,9 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
   const inOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   const outBack = t => { const c = 1.56; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
   const lerp = (a, b, t) => a + (b - a) * t;
+  // the layers lift with a small overshoot and settle, like plates set down by hand
+  // (the same slow start as before, so the stack never runs ahead of the camera; just a little more than full, then back)
+  const openE = x => x <= 0 ? 0 : x >= 1 ? 1 : inOut(x) + .075 * Math.sin(Math.PI * clamp((x - .5) / .5));
   const STAG = .1, LOOP_MS = 6000;
   // camera: from above and a little to the left, so the layers fan out on a diagonal, back top-right, front bottom-left.
   // Orthographic: parallel edges stay parallel.
@@ -426,6 +432,7 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
   const render = () => {
     const rest = canHover();
     const s = rest ? { p: 1, cam: 1, tag: layers.map(() => 0), sel: 0 } : story(t);
+    scene.style.opacity = rest || reduce ? 1 : clamp(t / 260).toFixed(3);   // the screen fades in, sharp, before anything moves
     const C = window.CAM || CAM;
     const u = s.cam;
     const FLAT = innerWidth < 900 ? .96 : .86;
@@ -442,7 +449,7 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
       scene.style.setProperty('--th', (wPx * .034).toFixed(2) + 'px');   // thick slabs
     }
     const W = curW, H = W * 1299 / 2000, G = W * C.g * (innerWidth < 900 ? 2.1 : 1), Wv = baseW * sc, Hv = Wv * 1299 / 2000;
-    const eTop = inOut(clamp(s.p / (1 - (N - 1) * STAG)));
+    const eTop = openE(clamp(s.p / (1 - (N - 1) * STAG)));
     const gz = 1 - (innerWidth < 900 ? .4 : .82) * scr;   // phones: the layers only draw a little closer   // 1 = fanned out, close to 0 = packed
     const midZ = (N - 1) * (1 + (G - 1) * eTop * gz) / 2;   // the middle of the stack stays on the camera axis
     // levitation: the stack drifts as one, slowly, and a soft wave runs up through the layers,
@@ -451,11 +458,13 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
     scene.style.transform = `translate(-50%,-50%) translate(${(Wv * C.tx * u).toFixed(2)}px,${(Hv * C.ty * u + fy).toFixed(2)}px) rotateX(${(C.rx * u).toFixed(3)}deg) rotateY(${(C.ry * u).toFixed(3)}deg) rotateZ(${(C.rz * u).toFixed(3)}deg) scale3d(${k.toFixed(4)},${k.toFixed(4)},${k.toFixed(4)}) translateZ(${(-midZ).toFixed(2)}px)`;
     const sel = layers.map((_, i) => Math.max(i === DATA ? s.sel : 0, ds[i]));
     layers.forEach((l, i) => {
-      const e = inOut(clamp((s.p - (N - 1 - i) * STAG) / (1 - (N - 1) * STAG)));
+      const e = openE(clamp((s.p - (N - 1 - i) * STAG) / (1 - (N - 1) * STAG)));
       const lev = Math.sin(floatT * 1.05 - i * .5) * W * .016 * e;
-      // the hovered layer slides out of the stack, along its own plane, and lifts a little
-      l.style.transform = `translate3d(${(-hs[i] * W * .055).toFixed(2)}px,${(-hs[i] * H * .02).toFixed(2)}px,${(i * (1 + (G - 1) * e * gz) + lev * gz + hs[i] * G * .06).toFixed(2)}px)`;
+      // the hovered layer is pulled out of the stack like a frame, along its own plane, and lifts;
+      // the others step back the other way as they empty out
       const dm = 1 - vis[i];
+      const px = -hs[i] * W * .05 + dm * W * .012, py = -hs[i] * H * .018 + dm * H * .007;   // enough to read as pulled out, never reaching the title
+      l.style.transform = `translate3d(${px.toFixed(2)}px,${py.toFixed(2)}px,${(i * (1 + (G - 1) * e * gz) + lev * gz + hs[i] * G * .1).toFixed(2)}px)`;
       l.style.setProperty('--dm', dm.toFixed(3));
       const pl = plates[i];
       pl.style.setProperty('--k', 1);   // the other layers empty out: only their dashed edges stay
@@ -467,7 +476,7 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
       tagC[i] = c;
     });
     // each tab takes its plate's skew: the plate's own axes, measured on screen
-    const r = iso.getBoundingClientRect(), PW = scene.offsetWidth, PH = scene.offsetHeight;
+    const r = iso.getBoundingClientRect(), PW = scene.offsetWidth * k, PH = scene.offsetHeight * k;
     ptags.forEach((g, i) => {
       if (tagC[i] <= 0) return;
       const [a, b, , d] = corners[i].map(c => c.getBoundingClientRect());
@@ -489,7 +498,7 @@ footer{width:100%;display:flex;justify-content:center;padding:0 0 clamp(20px,3vh
     const sdt = dt / 1000, w = 10;
     hs.forEach((v, i) => {
       const g = i === hov ? 1 : 0;
-      hv[i] += (w * w * (g - v) - 2 * w * hv[i]) * sdt; hs[i] = v + hv[i] * sdt;
+      hv[i] += (w * w * (g - v) - 1.5 * w * hv[i]) * sdt; hs[i] = v + hv[i] * sdt;   // a touch under-damped: the frame lands with a soft settle
       if (Math.abs(g - hs[i]) < .001 && Math.abs(hv[i]) < .002) { hs[i] = g; hv[i] = 0; }
       const k = 1 - Math.exp(-dt / (g ? 45 : 90));   // out in ~0.15 s, back in ~0.3 s
       ds[i] = Math.abs(g - ds[i]) < .003 ? g : ds[i] + (g - ds[i]) * k;
